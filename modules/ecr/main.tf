@@ -41,3 +41,27 @@ resource "null_resource" "docker_build_push" {
     EOF
   }
 }
+
+# index.htmlのハッシュ値を計算
+locals {
+  index_html_hash = filemd5("${path.module}/docker/index.html")
+}
+
+resource "null_resource" "docker_build" {
+  triggers = {
+    index_html_hash = local.index_html_hash
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      cd ${path.module}/docker
+      docker build -t ${aws_ecr_repository.main.repository_url}:latest .
+      docker push ${aws_ecr_repository.main.repository_url}:latest
+    EOT
+  }
+}
+
+output "image_version" {
+  description = "Version hash of the current image"
+  value       = local.index_html_hash
+}

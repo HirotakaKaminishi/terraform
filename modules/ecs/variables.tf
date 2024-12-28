@@ -68,3 +68,8 @@ variable "force_new_deployment" {
   type        = bool
   default     = true
 }
+
+variable "image_version" {
+  description = "Version of the container image"
+  type        = string
+}

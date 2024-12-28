@@ -27,6 +27,7 @@ module "ecs" {
   container_port       = 80
   desired_count        = 1
   force_new_deployment = true
+  image_version  = module.ecr.image_version
   subnet_ids           = module.vpc.public_subnet_ids
   tags = {
     "Project" = "my-ecs-project"

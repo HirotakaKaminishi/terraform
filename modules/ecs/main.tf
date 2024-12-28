@@ -26,6 +26,26 @@ resource "aws_ecs_service" "main" {
   launch_type     = "FARGATE"
   desired_count   = var.desired_count
   force_new_deployment = true
+
+  # デプロイ関連のパラメータを直接設定
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 0
+
+    # この設定を追加
+  deployment_controller {
+    type = "ECS"
+  }
+
+    # トリガーを追加して強制的な更新を促す
+  triggers = {
+    desired_count = var.desired_count
+    image_version = var.image_version
+    force_redeploy = timestamp()
+  }
+
+    # サービスの状態変更を待つ
+  wait_for_steady_state = true
+
   enable_ecs_managed_tags = true
   propagate_tags  = "SERVICE"
   tags = merge(
@@ -39,6 +59,14 @@ resource "aws_ecs_service" "main" {
     subnets          = var.subnet_ids
     assign_public_ip = false
     security_groups  = [aws_security_group.ecs_tasks.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+        ignore_changes = [
+      # timestampによるトリガーの変更を無視
+      triggers["force_redeploy"],
+    ]
   }
   load_balancer {
     target_group_arn = var.target_group_arn
@@ -63,6 +91,12 @@ resource "aws_ecs_task_definition" "main" {
     {
       name  = var.container_name
       image = var.container_image
+      environment = [
+        {
+          name  = "INDEX_VERSION"
+          value = var.image_version
+        }
+      ]
       portMappings = [
         {
           containerPort = var.container_port
