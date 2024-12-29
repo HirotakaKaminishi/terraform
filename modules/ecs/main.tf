@@ -29,7 +29,7 @@ resource "aws_ecs_service" "main" {
 
   # デプロイ関連のパラメータを直接設定
   deployment_maximum_percent         = 200
-  deployment_minimum_healthy_percent = 0
+  deployment_minimum_healthy_percent = 100
 
     # この設定を追加
   deployment_controller {
@@ -90,10 +90,10 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name  = var.container_name
-      image = var.container_image
+      image = "${var.repository_url}:${var.image_version}"
       environment = [
         {
-          name  = "INDEX_VERSION"
+          name  = "INDEX_HTML_HASH"
           value = var.image_version
         }
       ]

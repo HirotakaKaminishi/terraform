@@ -25,43 +25,25 @@ resource "aws_ecr_repository" "main" {
   )
 }
 
-# Dockerfileの内容をnull_resourceとして管理
-resource "null_resource" "docker_build_push" {
-  triggers = {
-    dockerfile_content = file("${path.module}/docker/Dockerfile")
-    index_html_content = file("${path.module}/docker/index.html")
-  }
-
-  provisioner "local-exec" {
-    command = <<EOF
-      aws --endpoint-url=http://localhost:4566 ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${aws_ecr_repository.main.repository_url}
-      cd ${path.module}/docker
-      docker build -t ${aws_ecr_repository.main.repository_url}:latest .
-      docker push ${aws_ecr_repository.main.repository_url}:latest
-    EOF
-  }
-}
-
-# index.htmlのハッシュ値を計算
 locals {
   index_html_hash = filemd5("${path.module}/docker/index.html")
 }
 
-resource "null_resource" "docker_build" {
+resource "null_resource" "docker_build_push_latest" {
   triggers = {
     index_html_hash = local.index_html_hash
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      cd ${path.module}/docker
-      docker build -t ${aws_ecr_repository.main.repository_url}:latest .
-      docker push ${aws_ecr_repository.main.repository_url}:latest
-    EOT
-  }
-}
+    command = <<-EOF
+      # LocalStackのエンドポイントを明示的に指定
+      export DOCKER_HOST=unix:///var/run/docker.sock
+      aws --endpoint-url=http://localhost:4566 ecr get-login-password --region ${var.region} \
+      | docker login --username AWS --password-stdin 000000000000.dkr.ecr.ap-northeast-1.localhost.localstack.cloud:4566
 
-output "image_version" {
-  description = "Version hash of the current image"
-  value       = local.index_html_hash
+      cd ${path.module}/docker
+      docker build --no-cache -t 000000000000.dkr.ecr.ap-northeast-1.localhost.localstack.cloud:4566/${var.project_name}-repo:${local.index_html_hash} .
+      docker push 000000000000.dkr.ecr.ap-northeast-1.localhost.localstack.cloud:4566/${var.project_name}-repo:${local.index_html_hash}
+    EOF
+  }
 }

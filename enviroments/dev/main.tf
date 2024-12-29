@@ -22,12 +22,12 @@ module "ecs" {
   task_cpu       = 256
   task_memory    = 512
   container_name = "my-app"
-  # container_image = "nginx:latest"
   container_image      = module.ecr.repository_url
+  image_version        = module.ecr.image_version
+  repository_url       = module.ecr.repository_url
   container_port       = 80
-  desired_count        = 1
+  desired_count        = 0
   force_new_deployment = true
-  image_version  = module.ecr.image_version
   subnet_ids           = module.vpc.public_subnet_ids
   tags = {
     "Project" = "my-ecs-project"

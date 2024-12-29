@@ -31,6 +31,7 @@ provider "aws" {
     ssm            = "http://localhost:4566"
     ecr            = "http://localhost:4566"
     eks            = "http://localhost:4566"
+    rds            = "http://localhost:4566"
   }
 
   # LocalStackを利用するため、以下の設定を追加

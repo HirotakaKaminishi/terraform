@@ -73,3 +73,8 @@ variable "image_version" {
   description = "Version of the container image"
   type        = string
 }
+
+variable "repository_url" {
+  type        = string
+  description = "ECR Repository URL"
+}
