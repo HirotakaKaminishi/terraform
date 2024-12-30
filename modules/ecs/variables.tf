@@ -78,3 +78,30 @@ variable "repository_url" {
   type        = string
   description = "ECR Repository URL"
 }
+
+variable "rds_security_group_id" {
+  type        = string
+  description = "Security group ID for RDS"
+}
+
+variable "db_name" {
+  type = string
+}
+
+variable "db_user" {
+  type = string
+}
+
+variable "db_password" {
+  type = string
+  sensitive = true
+}
+
+variable "db_port" {
+  type        = number
+  default     = 4510
+}
+
+variable "db_host" {
+  type = string
+}

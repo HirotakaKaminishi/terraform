@@ -26,7 +26,10 @@ resource "aws_ecr_repository" "main" {
 }
 
 locals {
-  index_html_hash = filemd5("${path.module}/docker/index.html")
+  # テストのindex.htmlをハッシュ化
+ # index_html_hash = filemd5("${path.module}/docker/test/index.html")
+  # 本番のindex.htmlをハッシュ化
+ index_html_hash = filemd5("${path.module}/docker/index.html")
 }
 
 resource "null_resource" "docker_build_push_latest" {

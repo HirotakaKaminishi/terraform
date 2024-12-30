@@ -25,25 +25,22 @@ resource "aws_ecs_service" "main" {
   task_definition = aws_ecs_task_definition.main.arn
   launch_type     = "FARGATE"
   desired_count   = var.desired_count
+  enable_execute_command = true
   force_new_deployment = true
 
-  # デプロイ関連のパラメータを直接設定
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 100
 
-    # この設定を追加
   deployment_controller {
     type = "ECS"
   }
 
-    # トリガーを追加して強制的な更新を促す
   triggers = {
     desired_count = var.desired_count
     image_version = var.image_version
     force_redeploy = timestamp()
   }
 
-    # サービスの状態変更を待つ
   wait_for_steady_state = true
 
   enable_ecs_managed_tags = true
@@ -63,8 +60,7 @@ resource "aws_ecs_service" "main" {
 
   lifecycle {
     create_before_destroy = true
-        ignore_changes = [
-      # timestampによるトリガーの変更を無視
+    ignore_changes = [
       triggers["force_redeploy"],
     ]
   }
@@ -91,12 +87,39 @@ resource "aws_ecs_task_definition" "main" {
     {
       name  = var.container_name
       image = "${var.repository_url}:${var.image_version}"
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
       environment = [
         {
           name  = "INDEX_HTML_HASH"
           value = var.image_version
+        },
+        {
+          name  = "DB_HOST"
+          value = var.db_host
+        },
+        {
+          name  = "DB_NAME"
+          value = var.db_name
+        },
+        {
+          name  = "DB_USER"
+          value = var.db_user
+        },
+        {
+          name  = "DB_PORT"
+          value = tostring(var.db_port)
+        },
+        {
+          name  = "DB_PASSWORD"
+          value = var.db_password
         }
-      ]
+      ],
       portMappings = [
         {
           containerPort = var.container_port
@@ -132,4 +155,13 @@ resource "aws_security_group" "ecs_tasks" {
     },
     var.tags
   )
+}
+
+resource "aws_security_group_rule" "ecs_to_rds" {
+  type                     = "egress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  security_group_id        = aws_security_group.ecs_tasks.id
+  source_security_group_id = var.rds_security_group_id
 }
